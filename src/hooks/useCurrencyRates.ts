@@ -2,7 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setLastUpdated } from '@/store/slices/currencySlice';
-import { useGetMultipleCurrencyRatesQuery } from '@/store/services/exchangeRateApi';
+import { useGetSpecificRatesQuery, getQuotaUsage } from '@/store/services/exchangeRateApi';
 
 interface UseAutoRefreshRatesProps {
   enabled: boolean;
@@ -22,10 +22,10 @@ export function useAutoRefreshRates({
     data: ratesData, 
     isLoading,
     refetch 
-  } = useGetMultipleCurrencyRatesQuery(
+  } = useGetSpecificRatesQuery(
     { 
       base: baseCurrency, 
-      symbols: targetCurrencies.filter(code => code !== baseCurrency)
+      targets: targetCurrencies.filter(code => code !== baseCurrency)
     },
     { 
       skip: !enabled || targetCurrencies.length === 0,

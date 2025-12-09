@@ -19,7 +19,7 @@ import {
   removeCurrency,
   Currency 
 } from '@/store/slices/currencySlice';
-import { useGetMultipleCurrencyRatesQuery } from '@/store/services/exchangeRateApi';
+import { useGetSpecificRatesQuery } from '@/store/services/exchangeRateApi';
 import { CurrencySelector } from './CurrencySelector';
 
 interface CurrencyItemProps {
@@ -123,10 +123,10 @@ export function MultiCurrencyConverter() {
     isLoading, 
     refetch,
     error 
-  } = useGetMultipleCurrencyRatesQuery(
+  } = useGetSpecificRatesQuery(
     { 
       base: inputCurrency || baseCurrency, 
-      symbols: currencyCodes.filter(code => code !== (inputCurrency || baseCurrency))
+      targets: currencyCodes.filter(code => code !== (inputCurrency || baseCurrency))
     },
     { 
       skip: !inputCurrency && !inputAmount,
