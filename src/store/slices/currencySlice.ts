@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { ALL_CURRENCIES } from '@/utils/currency';
 
 export interface Currency {
   code: string;
@@ -13,30 +14,31 @@ interface CurrencyState {
   lastUpdated: number | null;
   availableCurrencies: Currency[];
   refreshInterval: number; // in seconds
+  fromCurrency: string;
+  toCurrency: string;
+  amount: string;
 }
+
+// Convert ALL_CURRENCIES to Currency format with value field
+const availableCurrencies: Currency[] = ALL_CURRENCIES.map(currency => ({
+  ...currency,
+  value: '0',
+}));
 
 const initialState: CurrencyState = {
   selectedCurrencies: [
     { code: 'USD', name: 'US Dollar', symbol: '$', value: '0' },
     { code: 'EUR', name: 'Euro', symbol: '€', value: '0' },
-    { code: 'GBP', name: 'British Pound', symbol: '£', value: '0' },
+    { code: 'GBP', name: 'British Pound Sterling', symbol: '£', value: '0' },
     { code: 'PLN', name: 'Polish Zloty', symbol: 'zł', value: '0' },
   ],
   baseCurrency: 'USD',
   lastUpdated: null,
   refreshInterval: 300, // 5 minutes
-  availableCurrencies: [
-    { code: 'USD', name: 'US Dollar', symbol: '$', value: '0' },
-    { code: 'EUR', name: 'Euro', symbol: '€', value: '0' },
-    { code: 'GBP', name: 'British Pound', symbol: '£', value: '0' },
-    { code: 'JPY', name: 'Japanese Yen', symbol: '¥', value: '0' },
-    { code: 'PLN', name: 'Polish Zloty', symbol: 'zł', value: '0' },
-    { code: 'THB', name: 'Thai Baht', symbol: '฿', value: '0' },
-    { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', value: '0' },
-    { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', value: '0' },
-    { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr', value: '0' },
-    { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', value: '0' },
-  ],
+  availableCurrencies,
+  fromCurrency: 'USD',
+  toCurrency: 'EUR',
+  amount: '1',
 };
 
 const currencySlice = createSlice({
@@ -71,6 +73,20 @@ const currencySlice = createSlice({
     reorderCurrencies: (state, action: PayloadAction<Currency[]>) => {
       state.selectedCurrencies = action.payload;
     },
+    setFromCurrency: (state, action: PayloadAction<string>) => {
+      state.fromCurrency = action.payload;
+    },
+    setToCurrency: (state, action: PayloadAction<string>) => {
+      state.toCurrency = action.payload;
+    },
+    setAmount: (state, action: PayloadAction<string>) => {
+      state.amount = action.payload;
+    },
+    swapCurrencies: (state) => {
+      const temp = state.fromCurrency;
+      state.fromCurrency = state.toCurrency;
+      state.toCurrency = temp;
+    },
   },
 });
 
@@ -82,6 +98,10 @@ export const {
   clearAllValues,
   setLastUpdated,
   reorderCurrencies,
+  setFromCurrency,
+  setToCurrency,
+  setAmount,
+  swapCurrencies,
 } = currencySlice.actions;
 
 export default currencySlice.reducer;

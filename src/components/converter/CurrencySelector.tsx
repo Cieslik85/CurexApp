@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,11 +8,13 @@ import {
   TextInput,
   Modal,
   SafeAreaView,
+  SectionList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Currency, addCurrency } from '@/store/slices/currencySlice';
+import { POPULAR_CURRENCIES } from '@/utils/currency';
 
 interface CurrencySelectorProps {
   visible: boolean;
@@ -32,12 +34,41 @@ export function CurrencySelector({ visible, onClose }: CurrencySelectorProps) {
     currency => !selectedCurrencies.find(selected => selected.code === currency.code)
   );
 
-  // Filter based on search query
-  const filteredCurrencies = availableToAdd.filter(
-    currency =>
-      currency.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      currency.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Create sections for popular and other currencies
+  const currencySections = useMemo(() => {
+    let filteredCurrencies = availableToAdd;
+
+    // Filter based on search query if there is one
+    if (searchQuery.trim()) {
+      filteredCurrencies = availableToAdd.filter(
+        currency =>
+          currency.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          currency.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      
+      // If searching, return as a single flat list
+      return [{ title: 'Search Results', data: filteredCurrencies }];
+    }
+
+    // Separate popular and other currencies
+    const popularCodes = POPULAR_CURRENCIES.map(c => c.code);
+    const popular = filteredCurrencies.filter(currency => 
+      popularCodes.includes(currency.code)
+    );
+    const others = filteredCurrencies.filter(currency => 
+      !popularCodes.includes(currency.code)
+    );
+
+    const sections = [];
+    if (popular.length > 0) {
+      sections.push({ title: 'Popular Currencies', data: popular });
+    }
+    if (others.length > 0) {
+      sections.push({ title: 'All Currencies', data: others });
+    }
+
+    return sections;
+  }, [availableToAdd, searchQuery]);
 
   const handleSelectCurrency = (currency: Currency) => {
     dispatch(addCurrency({ ...currency, value: '0' }));
@@ -85,15 +116,21 @@ export function CurrencySelector({ visible, onClose }: CurrencySelectorProps) {
           />
         </View>
 
-        <FlatList
-          data={filteredCurrencies}
+        <SectionList
+          sections={currencySections}
           renderItem={renderCurrencyItem}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{title}</Text>
+            </View>
+          )}
           keyExtractor={(item) => item.code}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          stickySectionHeadersEnabled={false}
         />
 
-        {filteredCurrencies.length === 0 && (
+        {currencySections.every(section => section.data.length === 0) && (
           <View style={styles.emptyState}>
             <Ionicons name="search" size={48} color="#ccc" />
             <Text style={styles.emptyText}>
@@ -197,5 +234,17 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     marginTop: 16,
+  },
+  sectionHeader: {
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    textTransform: 'uppercase',
   },
 });
