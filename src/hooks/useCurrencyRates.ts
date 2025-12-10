@@ -2,7 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setLastUpdated } from '@/store/slices/currencySlice';
-import { useGetSpecificRatesQuery, getQuotaUsage } from '@/store/services/exchangeRateApi';
+import { useGetSpecificRatesQuery } from '@/store/services/exchangeRateApi';
 
 interface UseAutoRefreshRatesProps {
   enabled: boolean;

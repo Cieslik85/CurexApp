@@ -7,7 +7,7 @@
     "jsx": "react-native",
     "lib": [
       "dom",
-      "dom.iterable", 
+      "dom.iterable",
       "es6",
       "es2017",
       "es2018",
@@ -65,5 +65,6 @@
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }

@@ -17,11 +17,6 @@ interface CurrencyState {
   fromCurrency: string;
   toCurrency: string;
   amount: string;
-  apiQuota: {
-    dailyUsed: number;
-    dailyLimit: number;
-    lastResetDate: string;
-  };
 }
 
 // Convert ALL_CURRENCIES to Currency format with value field
@@ -39,16 +34,12 @@ const initialState: CurrencyState = {
   ],
   baseCurrency: 'USD',
   lastUpdated: null,
-  refreshInterval: 14400, // 4 hours (optimized for quota management)
+  refreshInterval: 1800, // 30 minutes (more frequent updates since no limits)
   availableCurrencies,
   fromCurrency: 'USD',
   toCurrency: 'EUR',
   amount: '1',
-  apiQuota: {
-    dailyUsed: 0,
-    dailyLimit: 48,
-    lastResetDate: new Date().toISOString().split('T')[0],
-  },
+
 };
 
 const currencySlice = createSlice({
@@ -97,27 +88,6 @@ const currencySlice = createSlice({
       state.fromCurrency = state.toCurrency;
       state.toCurrency = temp;
     },
-    updateApiQuota: (state, action: PayloadAction<{ used: number; limit: number }>) => {
-      const today = new Date().toISOString().split('T')[0];
-      state.apiQuota = {
-        dailyUsed: action.payload.used,
-        dailyLimit: action.payload.limit,
-        lastResetDate: today,
-      };
-    },
-    incrementApiUsage: (state) => {
-      const today = new Date().toISOString().split('T')[0];
-      if (state.apiQuota.lastResetDate !== today) {
-        // Reset daily usage if it's a new day
-        state.apiQuota = {
-          dailyUsed: 1,
-          dailyLimit: state.apiQuota.dailyLimit,
-          lastResetDate: today,
-        };
-      } else {
-        state.apiQuota.dailyUsed += 1;
-      }
-    },
   },
 });
 
@@ -133,8 +103,6 @@ export const {
   setToCurrency,
   setAmount,
   swapCurrencies,
-  updateApiQuota,
-  incrementApiUsage,
 } = currencySlice.actions;
 
 export default currencySlice.reducer;

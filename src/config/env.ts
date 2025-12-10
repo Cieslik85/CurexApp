@@ -1,29 +1,22 @@
 // Environment configuration and validation
 export const ENV_CONFIG = {
-  // Exchange Rate API
-  EXCHANGE_RATE_API_KEY: process.env.EXPO_PUBLIC_EXCHANGE_RATE_API_KEY,
-  
   // App Configuration
   APP_NAME: process.env.EXPO_PUBLIC_APP_NAME || 'CurexApp',
   DEFAULT_BASE_CURRENCY: process.env.EXPO_PUBLIC_DEFAULT_BASE_CURRENCY || 'USD',
-  CACHE_DURATION_HOURS: parseInt(process.env.EXPO_PUBLIC_CACHE_DURATION_HOURS || '4'),
-  DAILY_REQUEST_LIMIT: parseInt(process.env.EXPO_PUBLIC_DAILY_REQUEST_LIMIT || '48'),
+  CACHE_DURATION_MINUTES: parseInt(process.env.EXPO_PUBLIC_CACHE_DURATION_MINUTES || '30'),
+  REFRESH_INTERVAL_MINUTES: parseInt(process.env.EXPO_PUBLIC_REFRESH_INTERVAL_MINUTES || '30'),
 };
 
-// Validation function for required environment variables
+// Validation function for environment variables
 export const validateEnvConfig = (): string[] => {
   const errors: string[] = [];
   
-  if (!ENV_CONFIG.EXCHANGE_RATE_API_KEY) {
-    errors.push('EXPO_PUBLIC_EXCHANGE_RATE_API_KEY is required');
+  if (isNaN(ENV_CONFIG.CACHE_DURATION_MINUTES) || ENV_CONFIG.CACHE_DURATION_MINUTES <= 0) {
+    errors.push('EXPO_PUBLIC_CACHE_DURATION_MINUTES must be a positive number');
   }
   
-  if (isNaN(ENV_CONFIG.CACHE_DURATION_HOURS) || ENV_CONFIG.CACHE_DURATION_HOURS <= 0) {
-    errors.push('EXPO_PUBLIC_CACHE_DURATION_HOURS must be a positive number');
-  }
-  
-  if (isNaN(ENV_CONFIG.DAILY_REQUEST_LIMIT) || ENV_CONFIG.DAILY_REQUEST_LIMIT <= 0) {
-    errors.push('EXPO_PUBLIC_DAILY_REQUEST_LIMIT must be a positive number');
+  if (isNaN(ENV_CONFIG.REFRESH_INTERVAL_MINUTES) || ENV_CONFIG.REFRESH_INTERVAL_MINUTES <= 0) {
+    errors.push('EXPO_PUBLIC_REFRESH_INTERVAL_MINUTES must be a positive number');
   }
   
   return errors;

@@ -4,19 +4,6 @@ A cross-platform mobile currency exchange application built with Expo and React 
 
 ## 🚀 Quick Start
 
-### Environment Setup
-
-1. Copy the environment template:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Get your API key from [ExchangeRate-API](https://app.exchangerate-api.com/) and update `.env`:
-   ```env
-   EXPO_PUBLIC_EXCHANGE_RATE_API_KEY=your_actual_api_key_here
-   ```
-
 ### Installation & Run
 
 ```bash
@@ -27,10 +14,10 @@ npm start
 ## 📱 Features
 
 - **170+ World Currencies** - Comprehensive currency support including cryptocurrencies
-- **Real-time Exchange Rates** - Live rates with smart quota management
-- **Intelligent Caching** - 4-hour cache system to optimize API usage
-- **Quota Management** - Built-in tracking of daily/monthly API limits
-- **Offline-Friendly** - Works with cached data when API limits reached
+- **Real-time Exchange Rates** - Live rates from Frankfurter.dev (no limits!)
+- **Intelligent Caching** - 30-minute cache for optimal performance
+- **Always Available** - Free API with no rate limits or authentication
+- **Offline-Friendly** - Works with cached data when offline
 - **Favorites Management** - Save frequently used currencies
 - **Clean Interface** - Intuitive design with section organization
 
@@ -39,7 +26,7 @@ npm start
 - React Native with Expo
 - TypeScript
 - Redux Toolkit with RTK Query
-- ExchangeRate-API
+- Frankfurter.dev API (free, no limits)
 - AsyncStorage for caching
 
 ## 🔧 API Configuration
