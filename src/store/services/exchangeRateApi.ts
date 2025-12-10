@@ -19,7 +19,7 @@ interface ExchangeRateResponse {
 
 // API Configuration - Frankfurter.dev (free, no limits!)
 const BASE_URL = 'https://api.frankfurter.app';
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes - can be more aggressive since no limits
+const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours - good balance for offline functionality
 
 // Transform Frankfurter response to our internal format
 const transformResponse = (data: FrankfurterResponse): ExchangeRateResponse => ({
@@ -41,7 +41,7 @@ export const exchangeRateApi = createApi({
       query: (baseCurrency) => `/latest?from=${baseCurrency}`,
       transformResponse: (response: FrankfurterResponse) => transformResponse(response),
       providesTags: ['ExchangeRate'],
-      keepUnusedDataFor: CACHE_DURATION / 1000, // 30 minutes cache
+      keepUnusedDataFor: CACHE_DURATION / 1000, // 2 hours cache
     }),
     
     getSpecificRates: builder.query<ExchangeRateResponse, { base: string; targets: string[] }>({
