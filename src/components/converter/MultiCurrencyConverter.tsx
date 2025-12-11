@@ -22,6 +22,29 @@ import {
 import { useGetSpecificRatesQuery } from '@/store/services/exchangeRateApi';
 import { CurrencySelector } from './CurrencySelector';
 
+// Currency flag mapping
+const CURRENCY_FLAGS: Record<string, string> = {
+  'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'JPY': '🇯🇵', 'AUD': '🇦🇺', 'CAD': '🇨🇦', 'CHF': '🇨🇭',
+  'CNY': '🇨🇳', 'SEK': '🇸🇪', 'NZD': '🇳🇿', 'MXN': '🇲🇽', 'SGD': '🇸🇬', 'HKD': '🇭🇰', 'NOK': '🇳🇴',
+  'TRY': '🇹🇷', 'RUB': '🇷🇺', 'INR': '🇮🇳', 'BRL': '🇧🇷', 'ZAR': '🇿🇦', 'PLN': '🇵🇱', 'DKK': '🇩🇰',
+  'CZK': '🇨🇿', 'HUF': '🇭🇺', 'RON': '🇷🇴', 'BGN': '🇧🇬', 'HRK': '🇭🇷', 'ISK': '🇮🇸', 'THB': '🇹🇭',
+  'MYR': '🇲🇾', 'PHP': '🇵🇭', 'IDR': '🇮🇩', 'KRW': '🇰🇷', 'ILS': '🇮🇱', 'AED': '🇦🇪', 'SAR': '🇸🇦',
+  'EGP': '🇪🇬', 'NGN': '🇳🇬', 'GHS': '🇬🇭', 'KES': '🇰🇪', 'UGX': '🇺🇬', 'TZS': '🇹🇿', 'MAD': '🇲🇦',
+  'TND': '🇹🇳', 'DZD': '🇩🇿', 'LYD': '🇱🇾', 'ETB': '🇪🇹', 'CLP': '🇨🇱', 'COP': '🇨🇴', 'PEN': '🇵🇪',
+  'ARS': '🇦🇷', 'UYU': '🇺🇾', 'BOB': '🇧🇴', 'PYG': '🇵🇾', 'VES': '🇻🇪', 'GYD': '🇬🇾', 'SRD': '🇸🇷',
+  'TTD': '🇹🇹', 'JMD': '🇯🇲', 'BBD': '🇧🇧', 'BSD': '🇧🇸', 'BZD': '🇧🇿', 'GTQ': '🇬🇹', 'HNL': '🇭🇳',
+  'NIO': '🇳🇮', 'CRC': '🇨🇷', 'PAB': '🇵🇦', 'DOP': '🇩🇴', 'HTG': '🇭🇹', 'CUP': '🇨🇺', 'XCD': '🇦🇬',
+  'AWG': '🇦🇼', 'ANG': '🇨🇼', 'SVC': '🇸🇻', 'UAH': '🇺🇦', 'BYN': '🇧🇾', 'MDL': '🇲🇩', 'GEL': '🇬🇪',
+  'AMD': '🇦🇲', 'AZN': '🇦🇿', 'KZT': '🇰🇿', 'UZS': '🇺🇿', 'KGS': '🇰🇬', 'TJS': '🇹🇯', 'TMT': '🇹🇲',
+  'AFN': '🇦🇫', 'PKR': '🇵🇰', 'NPR': '🇳🇵', 'LKR': '🇱🇰', 'MVR': '🇲🇻', 'BDT': '🇧🇩', 'BTN': '🇧🇹',
+  'MMK': '🇲🇲', 'LAK': '🇱🇦', 'KHR': '🇰🇭', 'VND': '🇻🇳', 'TWD': '🇹🇼', 'MOP': '🇲🇴', 'BND': '🇧🇳',
+  'FJD': '🇫🇯', 'PGK': '🇵🇬', 'SBD': '🇸🇧', 'VUV': '🇻🇺', 'WST': '🇼🇸', 'TOP': '🇹🇴', 'KPW': '🇰🇵'
+};
+
+const getCurrencyFlag = (currencyCode: string): string => {
+  return CURRENCY_FLAGS[currencyCode] || '🏳️';
+};
+
 interface CurrencyItemProps {
   currency: Currency;
   onValueChange: (code: string, value: string) => void;
@@ -57,33 +80,19 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
   };
 
   const formatDisplayValue = (value: string): string => {
-    if (!value || value === '0') return '0';
+    if (!value || value === '0') return '0.00';
     const num = parseFloat(value);
-    if (isNaN(num)) return '0';
+    if (isNaN(num)) return '0.00';
     
-    // Format with appropriate decimal places
-    if (num >= 1000) {
-      return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    return num.toFixed(4).replace(/\.?0+$/, '');
+    // Always format with 2 decimal places
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (
     <View style={styles.currencyItem}>
-      <View style={styles.currencyHeader}>
-        <View style={styles.currencyInfo}>
-          <Text style={styles.currencyCode}>{currency.code}</Text>
-          <Text style={styles.currencyName}>{currency.name}</Text>
-        </View>
-        <TouchableOpacity 
-          onPress={() => onRemove(currency.code)}
-          style={styles.removeButton}
-        >
-          <Ionicons name="close-circle" size={20} color="#ff4444" />
-        </TouchableOpacity>
-      </View>
-      
       <View style={styles.inputContainer}>
+        <Text style={styles.currencyFlag}>{getCurrencyFlag(currency.code)}</Text>
+        <Text style={styles.currencyCode}>{currency.code}</Text>
         <Text style={styles.currencySymbol}>{currency.symbol}</Text>
         <TextInput
           style={[styles.currencyInput, isFocused && styles.inputFocused]}
@@ -95,13 +104,19 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
           }}
           onBlur={() => setIsFocused(false)}
           keyboardType="numeric"
-          placeholder="0"
+          placeholder="0.00"
           placeholderTextColor="#999"
           editable={!isCalculating}
         />
         {isCalculating && (
           <ActivityIndicator size="small" color="#007AFF" style={styles.loadingIndicator} />
         )}
+        <TouchableOpacity 
+          onPress={() => onRemove(currency.code)}
+          style={styles.removeButton}
+        >
+          <Ionicons name="close-circle" size={20} color="#ff4444" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -256,7 +271,7 @@ export function MultiCurrencyConverter() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 1,
   },
   header: {
     marginBottom: 16,
@@ -295,26 +310,20 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  currencyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  currencyInfo: {
-    flex: 1,
+
+  currencyFlag: {
+    fontSize: 20,
+    marginRight: 8,
   },
   currencyCode: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  currencyName: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#007AFF',
+    marginRight: 8,
+    minWidth: 45,
   },
   removeButton: {
+    marginLeft: 8,
     padding: 4,
   },
   inputContainer: {
@@ -323,13 +332,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 12,
     position: 'relative',
   },
   currencySymbol: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666',
     marginRight: 8,
   },
   currencyInput: {
