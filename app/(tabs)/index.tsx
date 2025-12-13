@@ -1,8 +1,12 @@
 import { StyleSheet, View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MultiCurrencyConverter } from '@/components/converter/MultiCurrencyConverter';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function HomeScreen() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -14,26 +18,26 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.background,
   },
   header: {
     padding: 20,
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: theme.colors.primary,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 16,
+    color: theme.colors.textSecondary,
   },
 });

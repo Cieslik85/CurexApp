@@ -5,6 +5,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -42,6 +43,7 @@ interface CurrencyPair {
 
 export default function ChartsScreen() {
   const { selectedCurrencies, baseCurrency } = useSelector((state: RootState) => state.currency);
+  const { theme } = useTheme();
   const [selectedPair, setSelectedPair] = useState<CurrencyPair | null>(null);
   const [historicalData, setHistoricalData] = useState<HistoricalRate[]>([]);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
@@ -210,6 +212,8 @@ export default function ChartsScreen() {
       isPositive: change >= 0
     };
   };
+
+  const styles = createStyles(theme);
 
   if (selectedCurrencies.length < 2) {
     return (

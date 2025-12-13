@@ -21,6 +21,7 @@ import {
 } from '@/store/slices/currencySlice';
 import { useGetSpecificRatesQuery } from '@/store/services/exchangeRateApi';
 import { CurrencySelector } from './CurrencySelector';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // Currency flag mapping
 const CURRENCY_FLAGS: Record<string, string> = {
@@ -50,13 +51,17 @@ interface CurrencyItemProps {
   onValueChange: (code: string, value: string) => void;
   onRemove: (code: string) => void;
   isCalculating: boolean;
+  theme: any;
+  styles: any;
 }
 
 const CurrencyItem: React.FC<CurrencyItemProps> = ({ 
   currency, 
   onValueChange, 
   onRemove,
-  isCalculating 
+  isCalculating,
+  theme,
+  styles
 }) => {
   const [localValue, setLocalValue] = useState(currency.value);
   const [isFocused, setIsFocused] = useState(false);
@@ -105,17 +110,17 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
           onBlur={() => setIsFocused(false)}
           keyboardType="numeric"
           placeholder="0.00"
-          placeholderTextColor="#999"
+          placeholderTextColor={theme.colors.textSecondary}
           editable={!isCalculating}
         />
         {isCalculating && (
-          <ActivityIndicator size="small" color="#007AFF" style={styles.loadingIndicator} />
+          <ActivityIndicator size="small" color={theme.colors.primary} style={styles.loadingIndicator} />
         )}
         <TouchableOpacity 
           onPress={() => onRemove(currency.code)}
           style={styles.removeButton}
         >
-          <Ionicons name="close-circle" size={20} color="#ff4444" />
+          <Ionicons name="close-circle" size={20} color={theme.colors.error} />
         </TouchableOpacity>
       </View>
     </View>
@@ -125,11 +130,24 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
 export function MultiCurrencyConverter() {
   const dispatch = useDispatch();
   const { selectedCurrencies, baseCurrency, lastUpdated } = useSelector((state: RootState) => state.currency);
+  const { theme } = useTheme();
   
   const [inputCurrency, setInputCurrency] = useState<string | null>(null);
   const [inputAmount, setInputAmount] = useState<string>('0');
   const [refreshing, setRefreshing] = useState(false);
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
+
+  // Ensure theme is loaded
+  if (!theme || !theme.colors) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  // Create styles object
+  const styles = createStyles(theme);
 
   // Get exchange rates for selected currencies
   const currencyCodes = selectedCurrencies.map(c => c.code);
@@ -208,6 +226,8 @@ export function MultiCurrencyConverter() {
       onValueChange={handleValueChange}
       onRemove={handleRemoveCurrency}
       isCalculating={isLoading}
+      theme={theme}
+      styles={styles}
     />
   );
 
@@ -224,7 +244,7 @@ export function MultiCurrencyConverter() {
     const hours = Math.floor(minutes / 60);
     return `Updated ${hours}h ago`;
   };
-
+  
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -246,7 +266,7 @@ export function MultiCurrencyConverter() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#007AFF"
+            tintColor={theme.colors.primary}
           />
         }
         contentContainerStyle={styles.listContent}
@@ -256,7 +276,7 @@ export function MultiCurrencyConverter() {
         style={styles.addButton}
         onPress={() => setShowCurrencySelector(true)}
       >
-        <Ionicons name="add-circle" size={24} color="#007AFF" />
+        <Ionicons name="add-circle" size={24} color={theme.colors.primary} />
         <Text style={styles.addButtonText}>Add Currency</Text>
       </TouchableOpacity>
 
@@ -268,10 +288,11 @@ export function MultiCurrencyConverter() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
     padding: 1,
+    backgroundColor: theme.colors.background,
   },
   header: {
     marginBottom: 16,
@@ -279,7 +300,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   statusRow: {
@@ -289,18 +310,18 @@ const styles = StyleSheet.create({
   },
   lastUpdated: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   errorText: {
     fontSize: 12,
-    color: '#ff4444',
+    color: theme.colors.error,
     fontWeight: '500',
   },
   listContent: {
     paddingBottom: 80,
   },
   currencyItem: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -318,7 +339,7 @@ const styles = StyleSheet.create({
   currencyCode: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#007AFF',
+    color: theme.colors.primary,
     marginRight: 8,
     minWidth: 45,
   },
@@ -329,7 +350,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.background,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -338,18 +359,18 @@ const styles = StyleSheet.create({
   currencySymbol: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginRight: 8,
   },
   currencyInput: {
     flex: 1,
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     paddingVertical: 8,
   },
   inputFocused: {
-    backgroundColor: '#e6f3ff',
+    backgroundColor: theme.colors.primary + '20',
   },
   loadingIndicator: {
     marginLeft: 8,
@@ -358,18 +379,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f0f8ff',
+    backgroundColor: theme.colors.primary + '10',
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: theme.colors.primary,
     borderStyle: 'dashed',
   },
   addButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: theme.colors.primary,
     marginLeft: 8,
   },
 });
