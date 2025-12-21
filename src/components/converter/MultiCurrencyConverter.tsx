@@ -17,11 +17,13 @@ import {
   updateCurrencyValue, 
   setLastUpdated, 
   removeCurrency,
+  loadPersistedCurrencies,
   Currency 
 } from '@/store/slices/currencySlice';
 import { useGetSpecificRatesQuery } from '@/store/services/exchangeRateApi';
 import { CurrencySelector } from './CurrencySelector';
 import { useTheme } from '@/contexts/ThemeContext';
+import { saveSelectedCurrencies, loadSelectedCurrencies } from '@/utils/currencyPersistence';
 
 // Currency flag mapping
 const CURRENCY_FLAGS: Record<string, string> = {
@@ -105,7 +107,9 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
           onChangeText={handleValueChange}
           onFocus={() => {
             setIsFocused(true);
-            setLocalValue(currency.value);
+            // Clear the field if it only contains "0" or "0.00"
+            const numValue = parseFloat(currency.value);
+            setLocalValue(numValue === 0 ? '' : currency.value);
           }}
           onBlur={() => setIsFocused(false)}
           keyboardType="numeric"
@@ -148,6 +152,25 @@ export function MultiCurrencyConverter() {
 
   // Create styles object
   const styles = createStyles(theme);
+
+  // Load persisted currencies on component mount
+  useEffect(() => {
+    const loadCurrencies = async () => {
+      const persistedCurrencies = await loadSelectedCurrencies();
+      if (persistedCurrencies && persistedCurrencies.length > 0) {
+        dispatch(loadPersistedCurrencies(persistedCurrencies));
+      }
+    };
+    
+    loadCurrencies();
+  }, [dispatch]);
+
+  // Save currencies whenever selectedCurrencies changes
+  useEffect(() => {
+    if (selectedCurrencies.length > 0) {
+      saveSelectedCurrencies(selectedCurrencies);
+    }
+  }, [selectedCurrencies]);
 
   // Get exchange rates for selected currencies
   const currencyCodes = selectedCurrencies.map(c => c.code);

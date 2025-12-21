@@ -25,13 +25,16 @@ const availableCurrencies: Currency[] = ALL_CURRENCIES.map(currency => ({
   value: '0',
 }));
 
+// Default currencies that will be used on first app launch
+const getDefaultCurrencies = (): Currency[] => [
+  { code: 'USD', name: 'US Dollar', symbol: '$', value: '0' },
+  { code: 'EUR', name: 'Euro', symbol: '€', value: '0' },
+  { code: 'GBP', name: 'British Pound Sterling', symbol: '£', value: '0' },
+  { code: 'PLN', name: 'Polish Zloty', symbol: 'zł', value: '0' },
+];
+
 const initialState: CurrencyState = {
-  selectedCurrencies: [
-    { code: 'USD', name: 'US Dollar', symbol: '$', value: '0' },
-    { code: 'EUR', name: 'Euro', symbol: '€', value: '0' },
-    { code: 'GBP', name: 'British Pound Sterling', symbol: '£', value: '0' },
-    { code: 'PLN', name: 'Polish Zloty', symbol: 'zł', value: '0' },
-  ],
+  selectedCurrencies: getDefaultCurrencies(),
   baseCurrency: 'USD',
   lastUpdated: null,
   refreshInterval: 1800, // 30 minutes (more frequent updates since no limits)
@@ -39,7 +42,6 @@ const initialState: CurrencyState = {
   fromCurrency: 'USD',
   toCurrency: 'EUR',
   amount: '1',
-
 };
 
 const currencySlice = createSlice({
@@ -88,6 +90,13 @@ const currencySlice = createSlice({
       state.fromCurrency = state.toCurrency;
       state.toCurrency = temp;
     },
+    loadPersistedCurrencies: (state, action: PayloadAction<Currency[]>) => {
+      // Load currencies from AsyncStorage, reset values to '0' for fresh session
+      state.selectedCurrencies = action.payload.map(currency => ({
+        ...currency,
+        value: '0'
+      }));
+    },
   },
 });
 
@@ -103,6 +112,7 @@ export const {
   setToCurrency,
   setAmount,
   swapCurrencies,
+  loadPersistedCurrencies,
 } = currencySlice.actions;
 
 export default currencySlice.reducer;
