@@ -65,7 +65,7 @@ const DARK_COLORS = {
 
 const DEFAULT_SETTINGS: ThemeSettings = {
   mode: 'auto',
-  colorScheme: 'blue',
+  colorScheme: 'green',
   backgroundStyle: 'solid',
   reducedMotion: false,
   highContrast: false,
@@ -101,6 +101,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const loadSettings = async () => {
     try {
+      // Temporary: Force green color scheme for existing installations
+      await AsyncStorage.removeItem(STORAGE_KEY);
+      
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsedSettings = JSON.parse(stored);
@@ -127,6 +130,8 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const resetToDefaults = () => {
     setSettings(DEFAULT_SETTINGS);
+    // Also clear AsyncStorage to ensure fresh start
+    AsyncStorage.removeItem(STORAGE_KEY).catch(console.error);
   };
 
   // Determine if dark mode should be active

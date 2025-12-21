@@ -430,10 +430,10 @@ export default function ChartsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.background,
   },
   scrollView: {
     flex: 1,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1c1c1e',
+    color: theme.colors.text,
     marginBottom: 20,
   },
   pairSelector: {
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -480,11 +480,11 @@ const styles = StyleSheet.create({
   pairText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1c1c1e',
+    color: theme.colors.text,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -492,18 +492,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1c1c1e',
+    color: theme.colors.text,
   },
   modalCancelButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: theme.colors.primary,
   },
   modalHeaderSpacer: {
     width: 50,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     marginHorizontal: 20,
     marginVertical: 16,
     paddingHorizontal: 16,
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1c1c1e',
+    color: theme.colors.text,
   },
   clearButton: {
     marginLeft: 8,
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     padding: 16,
     marginBottom: 8,
     borderRadius: 12,
@@ -579,10 +579,10 @@ const styles = StyleSheet.create({
   pairOptionText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1c1c1e',
+    color: theme.colors.text,
   },
   rateCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     padding: 20,
     borderRadius: 16,
     shadowColor: '#000',
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
   currentRate: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#1c1c1e',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   rateChangeContainer: {
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
   },
   timeRangeContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 4,
     shadowColor: '#000',
@@ -626,18 +626,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   timeRangeButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
   },
   timeRangeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   timeRangeTextActive: {
     color: 'white',
   },
   chartContainer: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     marginBottom: 20,
     shadowColor: '#000',
@@ -659,10 +659,10 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   infoContainer: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     padding: 20,
     borderRadius: 16,
     marginBottom: 20,
@@ -675,12 +675,12 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1c1c1e',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   infoText: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   emptyState: {
@@ -692,13 +692,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#1c1c1e',
+    color: theme.colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
 });
