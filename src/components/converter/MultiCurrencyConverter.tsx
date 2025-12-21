@@ -188,6 +188,35 @@ export function MultiCurrencyConverter() {
     }
   }, [inputCurrency, inputAmount, ratesData, dispatch, selectedCurrencies]);
 
+  // Calculate values for newly added currencies based on existing non-zero values
+  useEffect(() => {
+    const currenciesWithValues = selectedCurrencies.filter(c => parseFloat(c.value) > 0);
+    const currenciesWithZero = selectedCurrencies.filter(c => parseFloat(c.value) === 0);
+    
+    // If we have currencies with values and currencies with zero values, convert them
+    if (currenciesWithValues.length > 0 && currenciesWithZero.length > 0 && ratesData?.rates) {
+      const referenceCurrency = currenciesWithValues[0];
+      const referenceAmount = parseFloat(referenceCurrency.value);
+      
+      // Set the reference currency as the input currency temporarily
+      if (!inputCurrency || inputAmount === '0') {
+        setInputCurrency(referenceCurrency.code);
+        setInputAmount(referenceCurrency.value);
+      }
+      
+      // Convert zero-value currencies
+      currenciesWithZero.forEach(currency => {
+        if (currency.code !== referenceCurrency.code) {
+          const rate = ratesData.rates[currency.code];
+          if (rate) {
+            const convertedValue = (referenceAmount * rate).toString();
+            dispatch(updateCurrencyValue({ code: currency.code, value: convertedValue }));
+          }
+        }
+      });
+    }
+  }, [selectedCurrencies.length, ratesData, dispatch]); // Only trigger when currencies are added/removed
+
   const handleValueChange = useCallback((code: string, value: string) => {
     setInputCurrency(code);
     setInputAmount(value);
