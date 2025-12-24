@@ -309,6 +309,20 @@ export function MultiCurrencyConverter() {
     }
   }, [selectedCurrencies]);
 
+  // Auto-focus on the first currency when currencies are available
+  useEffect(() => {
+    if (selectedCurrencies.length > 0 && !activeField) {
+      const firstCurrency = selectedCurrencies[0];
+      setActiveField(firstCurrency.code);
+      
+      // Initialize field value
+      const numValue = parseFloat(firstCurrency.value);
+      setFieldValues({
+        [firstCurrency.code]: numValue === 0 ? '' : trimToTwoDecimals(firstCurrency.value)
+      });
+    }
+  }, [selectedCurrencies, activeField]);
+
   // Get exchange rates for selected currencies
   const currencyCodes = selectedCurrencies.map(c => c.code);
   const { 
