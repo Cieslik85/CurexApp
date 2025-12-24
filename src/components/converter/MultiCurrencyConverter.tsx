@@ -118,7 +118,13 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
             setIsFocused(true);
             // Clear the field if it only contains "0" or "0.00"
             const numValue = parseFloat(currency.value);
-            setLocalValue(numValue === 0 ? '' : currency.value);
+            if (numValue === 0) {
+              setLocalValue('');
+            } else {
+              // Always trim to 2 decimals when focusing
+              const trimmedValue = trimToTwoDecimals(currency.value);
+              setLocalValue(trimmedValue);
+            }
           }}
           onBlur={() => {
             setIsFocused(false);
