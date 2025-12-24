@@ -499,7 +499,6 @@ export function MultiCurrencyConverter() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Multi-Currency Converter</Text>
         <View style={styles.statusRow}>
           <Text style={styles.lastUpdated}>{getLastUpdatedText()}</Text>
           {error && (
@@ -552,12 +551,6 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   header: {
     marginBottom: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: 4,
   },
   statusRow: {
     flexDirection: 'row',
