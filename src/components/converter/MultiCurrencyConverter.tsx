@@ -70,7 +70,9 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
 
   useEffect(() => {
     if (!isFocused) {
-      setLocalValue(currency.value);
+      // Always trim the stored value to 2 decimals before setting local value
+      const trimmedValue = trimToTwoDecimals(currency.value);
+      setLocalValue(trimmedValue);
     }
   }, [currency.value, isFocused]);
 
@@ -151,6 +153,16 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
   );
 };
 
+// Helper function to trim values to 2 decimal places
+const trimToTwoDecimals = (value: string | number): string => {
+  if (!value || value === '') return '0';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '0';
+  
+  // Round to 2 decimal places and convert back to string
+  return (Math.round(num * 100) / 100).toString();
+};
+
 export function MultiCurrencyConverter() {
   const dispatch = useDispatch();
   const { selectedCurrencies, baseCurrency, lastUpdated } = useSelector((state: RootState) => state.currency);
@@ -217,11 +229,12 @@ export function MultiCurrencyConverter() {
       
       selectedCurrencies.forEach(currency => {
         if (currency.code === inputCurrency) {
-          dispatch(updateCurrencyValue({ code: currency.code, value: inputAmount }));
+          const trimmedValue = trimToTwoDecimals(inputAmount);
+          dispatch(updateCurrencyValue({ code: currency.code, value: trimmedValue }));
         } else {
           const rate = ratesData.rates[currency.code];
           if (rate) {
-            const convertedValue = (amount * rate).toString();
+            const convertedValue = trimToTwoDecimals(amount * rate);
             dispatch(updateCurrencyValue({ code: currency.code, value: convertedValue }));
           }
         }
@@ -252,7 +265,7 @@ export function MultiCurrencyConverter() {
         if (currency.code !== referenceCurrency.code) {
           const rate = ratesData.rates[currency.code];
           if (rate) {
-            const convertedValue = (referenceAmount * rate).toString();
+            const convertedValue = trimToTwoDecimals(referenceAmount * rate);
             dispatch(updateCurrencyValue({ code: currency.code, value: convertedValue }));
           }
         }
