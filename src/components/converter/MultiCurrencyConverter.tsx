@@ -95,6 +95,15 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
     return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  const trimToTwoDecimals = (value: string): string => {
+    if (!value || value === '') return '0';
+    const num = parseFloat(value);
+    if (isNaN(num)) return '0';
+    
+    // Round to 2 decimal places and convert back to string
+    return (Math.round(num * 100) / 100).toString();
+  };
+
   return (
     <View style={styles.currencyItem}>
       <View style={styles.inputContainer}>
@@ -111,7 +120,12 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
             const numValue = parseFloat(currency.value);
             setLocalValue(numValue === 0 ? '' : currency.value);
           }}
-          onBlur={() => setIsFocused(false)}
+          onBlur={() => {
+            setIsFocused(false);
+            // Trim the value to 2 decimals and update the store
+            const trimmedValue = trimToTwoDecimals(localValue);
+            onValueChange(currency.code, trimmedValue);
+          }}
           keyboardType="numeric"
           placeholder="0.00"
           placeholderTextColor={theme.colors.textSecondary}
