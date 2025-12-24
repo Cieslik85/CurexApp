@@ -19,7 +19,7 @@ interface ExchangeRateResponse {
 
 // API Configuration - Frankfurter.dev (free, no limits!)
 const BASE_URL = 'https://api.frankfurter.app';
-const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours - good balance for offline functionality
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes - optimal balance for offline functionality
 
 // Transform Frankfurter response to our internal format
 const transformResponse = (data: FrankfurterResponse): ExchangeRateResponse => ({
