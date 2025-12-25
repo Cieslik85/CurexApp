@@ -255,6 +255,7 @@ export function MultiCurrencyConverter() {
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [freshlyFocused, setFreshlyFocused] = useState<boolean>(false);
 
   // Ensure theme is loaded
   if (!theme || !theme.colors) {
@@ -394,6 +395,7 @@ export function MultiCurrencyConverter() {
 
   const handleFieldFocus = useCallback((currencyCode: string) => {
     setActiveField(currencyCode);
+    setFreshlyFocused(true);
     // Initialize field value if not exists
     const currentCurrency = selectedCurrencies.find(c => c.code === currencyCode);
     if (currentCurrency) {
@@ -415,14 +417,25 @@ export function MultiCurrencyConverter() {
       if (key === '⌫') {
         // Backspace
         newValue = currentValue.slice(0, -1);
+        setFreshlyFocused(false);
       } else if (key === '.') {
         // Decimal point - only allow one
-        if (!currentValue.includes('.')) {
+        if (freshlyFocused) {
+          // If freshly focused, replace with just the decimal
+          newValue = '0.';
+          setFreshlyFocused(false);
+        } else if (!currentValue.includes('.')) {
           newValue = currentValue + '.';
         }
       } else {
         // Numbers
-        newValue = currentValue + key;
+        if (freshlyFocused) {
+          // If freshly focused, replace the entire value
+          newValue = key;
+          setFreshlyFocused(false);
+        } else {
+          newValue = currentValue + key;
+        }
       }
 
       // Validate the new value
@@ -434,7 +447,7 @@ export function MultiCurrencyConverter() {
       
       return prev;
     });
-  }, [activeField, handleValueChange]);
+  }, [activeField, handleValueChange, freshlyFocused]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
