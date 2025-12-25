@@ -25,35 +25,13 @@ import { useGetSpecificRatesQuery } from '@/store/services/exchangeRateApi';
 import { CurrencySelector } from './CurrencySelector';
 import { useTheme } from '@/contexts/ThemeContext';
 import { saveSelectedCurrencies, loadSelectedCurrencies } from '@/utils/currencyPersistence';
+import { getCurrencyFlag } from '@/utils/currencyFlags';
 
 // Permanent keyboard interface
 interface PermanentKeyboardProps {
   onKeyPress: (key: string) => void;
   theme: any;
 }
-
-// Currency flag mapping
-const CURRENCY_FLAGS: Record<string, string> = {
-  'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'JPY': '🇯🇵', 'AUD': '🇦🇺', 'CAD': '🇨🇦', 'CHF': '🇨🇭',
-  'CNY': '🇨🇳', 'SEK': '🇸🇪', 'NZD': '🇳🇿', 'MXN': '🇲🇽', 'SGD': '🇸🇬', 'HKD': '🇭🇰', 'NOK': '🇳🇴',
-  'TRY': '🇹🇷', 'RUB': '🇷🇺', 'INR': '🇮🇳', 'BRL': '🇧🇷', 'ZAR': '🇿🇦', 'PLN': '🇵🇱', 'DKK': '🇩🇰',
-  'CZK': '🇨🇿', 'HUF': '🇭🇺', 'RON': '🇷🇴', 'BGN': '🇧🇬', 'HRK': '🇭🇷', 'ISK': '🇮🇸', 'THB': '🇹🇭',
-  'MYR': '🇲🇾', 'PHP': '🇵🇭', 'IDR': '🇮🇩', 'KRW': '🇰🇷', 'ILS': '🇮🇱', 'AED': '🇦🇪', 'SAR': '🇸🇦',
-  'EGP': '🇪🇬', 'NGN': '🇳🇬', 'GHS': '🇬🇭', 'KES': '🇰🇪', 'UGX': '🇺🇬', 'TZS': '🇹🇿', 'MAD': '🇲🇦',
-  'TND': '🇹🇳', 'DZD': '🇩🇿', 'LYD': '🇱🇾', 'ETB': '🇪🇹', 'CLP': '🇨🇱', 'COP': '🇨🇴', 'PEN': '🇵🇪',
-  'ARS': '🇦🇷', 'UYU': '🇺🇾', 'BOB': '🇧🇴', 'PYG': '🇵🇾', 'VES': '🇻🇪', 'GYD': '🇬🇾', 'SRD': '🇸🇷',
-  'TTD': '🇹🇹', 'JMD': '🇯🇲', 'BBD': '🇧🇧', 'BSD': '🇧🇸', 'BZD': '🇧🇿', 'GTQ': '🇬🇹', 'HNL': '🇭🇳',
-  'NIO': '🇳🇮', 'CRC': '🇨🇷', 'PAB': '🇵🇦', 'DOP': '🇩🇴', 'HTG': '🇭🇹', 'CUP': '🇨🇺', 'XCD': '🇦🇬',
-  'AWG': '🇦🇼', 'ANG': '🇨🇼', 'SVC': '🇸🇻', 'UAH': '🇺🇦', 'BYN': '🇧🇾', 'MDL': '🇲🇩', 'GEL': '🇬🇪',
-  'AMD': '🇦🇲', 'AZN': '🇦🇿', 'KZT': '🇰🇿', 'UZS': '🇺🇿', 'KGS': '🇰🇬', 'TJS': '🇹🇯', 'TMT': '🇹🇲',
-  'AFN': '🇦🇫', 'PKR': '🇵🇰', 'NPR': '🇳🇵', 'LKR': '🇱🇰', 'MVR': '🇲🇻', 'BDT': '🇧🇩', 'BTN': '🇧🇹',
-  'MMK': '🇲🇲', 'LAK': '🇱🇦', 'KHR': '🇰🇭', 'VND': '🇻🇳', 'TWD': '🇹🇼', 'MOP': '🇲🇴', 'BND': '🇧🇳',
-  'FJD': '🇫🇯', 'PGK': '🇵🇬', 'SBD': '🇸🇧', 'VUV': '🇻🇺', 'WST': '🇼🇸', 'TOP': '🇹🇴', 'KPW': '🇰🇵'
-};
-
-const getCurrencyFlag = (currencyCode: string): string => {
-  return CURRENCY_FLAGS[currencyCode] || '🏳️';
-};
 
 // Permanent Keyboard Component
 const PermanentKeyboard: React.FC<PermanentKeyboardProps> = ({ onKeyPress, theme }) => {

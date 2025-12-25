@@ -6,108 +6,81 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ALL_CURRENCIES } from '@/utils/currency';
+import { getCurrencyFlag } from '@/utils/currencyFlags';
 
 const { width: screenWidth } = Dimensions.get('window');
-
-// Currency flag mapping
-const CURRENCY_FLAGS: Record<string, string> = {
-  'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'JPY': '🇯🇵', 'AUD': '🇦🇺', 'CAD': '🇨🇦', 'CHF': '🇨🇭',
-  'CNY': '🇨🇳', 'SEK': '🇸🇪', 'NZD': '🇳🇿', 'MXN': '🇲🇽', 'SGD': '🇸🇬', 'HKD': '🇭🇰', 'NOK': '🇳🇴',
-  'TRY': '🇹🇷', 'RUB': '🇷🇺', 'INR': '🇮🇳', 'BRL': '🇧🇷', 'ZAR': '🇿🇦', 'PLN': '🇵🇱', 'DKK': '🇩🇰',
-  'CZK': '🇨🇿', 'HUF': '🇭🇺', 'RON': '🇷🇴', 'BGN': '🇧🇬', 'HRK': '🇭🇷', 'ISK': '🇮🇸', 'THB': '🇹🇭'
-};
-
-const getCurrencyFlag = (currencyCode: string): string => {
-  return CURRENCY_FLAGS[currencyCode] || '🏳️';
-};
-
-// Popular currency pairs for quick access
-const POPULAR_PAIRS = [
-  { from: 'USD', to: 'EUR' },
-  { from: 'USD', to: 'GBP' },
-  { from: 'EUR', to: 'GBP' },
-  { from: 'USD', to: 'JPY' },
-  { from: 'GBP', to: 'EUR' },
-  { from: 'USD', to: 'CAD' }
-];
 
 interface HistoricalRate {
   date: string;
   rate: number;
 }
 
-interface CurrencyPair {
-  from: string;
-  to: string;
-}
-
 export default function ChartsScreen() {
   const { selectedCurrencies, baseCurrency } = useSelector((state: RootState) => state.currency);
   const { theme } = useTheme();
-  const [selectedPair, setSelectedPair] = useState<CurrencyPair | null>(null);
+  const [fromCurrency, setFromCurrency] = useState<string>('');
+  const [toCurrency, setToCurrency] = useState<string>('');
   const [historicalData, setHistoricalData] = useState<HistoricalRate[]>([]);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [loading, setLoading] = useState(false);
-  const [showPairModal, setShowPairModal] = useState(false);
+  const [showFromModal, setShowFromModal] = useState(false);
+  const [showToModal, setShowToModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [recentPairs, setRecentPairs] = useState<CurrencyPair[]>([]);
 
-  // Initialize with first available currency pair
+  // Initialize with first available currencies
   useEffect(() => {
-    if (selectedCurrencies.length >= 2 && !selectedPair) {
-      setSelectedPair({
-        from: selectedCurrencies[0].code,
-        to: selectedCurrencies[1].code
-      });
+    if (selectedCurrencies.length >= 2) {
+      if (!fromCurrency) setFromCurrency(selectedCurrencies[0].code);
+      if (!toCurrency) setToCurrency(selectedCurrencies[1].code);
     }
-  }, [selectedCurrencies, selectedPair]);
+  }, [selectedCurrencies, fromCurrency, toCurrency]);
 
-  // Get all possible currency pairs
-  const getAllPossiblePairs = (): CurrencyPair[] => {
-    const pairs: CurrencyPair[] = [];
-    for (let i = 0; i < selectedCurrencies.length; i++) {
-      for (let j = 0; j < selectedCurrencies.length; j++) {
-        if (i !== j) {
-          pairs.push({
-            from: selectedCurrencies[i].code,
-            to: selectedCurrencies[j].code
-          });
-        }
-      }
-    }
-    return pairs;
-  };
-
-  // Filter pairs based on search query
-  const getFilteredPairs = (): CurrencyPair[] => {
-    const allPairs = getAllPossiblePairs();
-    if (!searchQuery) return allPairs;
+  // Get organized currencies for selection (selected ones first, then all others)
+  const getOrganizedCurrencies = () => {
+    const selectedCodes = selectedCurrencies.map(c => c.code);
     
-    return allPairs.filter(pair => 
-      pair.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pair.to.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
-
-  // Get popular pairs that are available
-  const getAvailablePopularPairs = (): CurrencyPair[] => {
-    const availableCodes = selectedCurrencies.map(c => c.code);
-    return POPULAR_PAIRS.filter(pair => 
-      availableCodes.includes(pair.from) && availableCodes.includes(pair.to)
-    );
-  };
-
-  // Handle pair selection
-  const handlePairSelect = (pair: CurrencyPair) => {
-    setSelectedPair(pair);
-    setShowPairModal(false);
-    setSearchQuery('');
-    
-    // Add to recent pairs
-    setRecentPairs(prev => {
-      const filtered = prev.filter(p => !(p.from === pair.from && p.to === pair.to));
-      return [pair, ...filtered].slice(0, 5); // Keep only 5 recent pairs
+    // Filter all currencies based on search query
+    const filteredAll = ALL_CURRENCIES.filter(currency => {
+      if (!searchQuery) return true;
+      return currency.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             currency.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
+    
+    // Split into selected and other currencies
+    const selectedFiltered = filteredAll.filter(currency => 
+      selectedCodes.includes(currency.code)
+    );
+    
+    const otherFiltered = filteredAll.filter(currency => 
+      !selectedCodes.includes(currency.code)
+    );
+    
+    return {
+      selected: selectedFiltered,
+      others: otherFiltered,
+      all: [...selectedFiltered, ...otherFiltered]
+    };
+  };
+
+  // Handle currency selection
+  const handleFromCurrencySelect = (currencyCode: string) => {
+    setFromCurrency(currencyCode);
+    setShowFromModal(false);
+    setSearchQuery('');
+  };
+
+  const handleToCurrencySelect = (currencyCode: string) => {
+    setToCurrency(currencyCode);
+    setShowToModal(false);
+    setSearchQuery('');
+  };
+
+  // Swap currencies
+  const swapCurrencies = () => {
+    const temp = fromCurrency;
+    setFromCurrency(toCurrency);
+    setToCurrency(temp);
   };
 
   // Generate mock historical data for demonstration
@@ -133,7 +106,7 @@ export default function ChartsScreen() {
 
   // Fetch historical data (mock implementation)
   useEffect(() => {
-    if (!selectedPair) return;
+    if (!fromCurrency || !toCurrency || fromCurrency === toCurrency) return;
 
     setLoading(true);
     
@@ -146,7 +119,7 @@ export default function ChartsScreen() {
     }, 1000);
 
     return () => clearTimeout(timeout);
-  }, [selectedPair, timeRange]);
+  }, [fromCurrency, toCurrency, timeRange]);
 
   const getChartData = () => {
     if (historicalData.length === 0) {
@@ -235,25 +208,41 @@ export default function ChartsScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Exchange Rate History</Text>
           
-          {/* Currency Pair Selector */}
-          <View style={styles.pairSelector}>
+          {/* Currency Selectors */}
+          <View style={styles.currencySelectorsContainer}>
+            {/* From Currency */}
             <TouchableOpacity 
-              style={styles.pairButton}
-              onPress={() => setShowPairModal(true)}
+              style={[styles.currencyButton, styles.fromButton]}
+              onPress={() => setShowFromModal(true)}
             >
-              <View style={styles.pairButtonContent}>
-                <View style={styles.pairFlags}>
-                  <Text style={styles.flagText}>{getCurrencyFlag(selectedPair?.from || '')}</Text>
-                  <Text style={styles.flagText}>{getCurrencyFlag(selectedPair?.to || '')}</Text>
-                </View>
-                <Text style={styles.pairText}>
-                  {selectedPair?.from} → {selectedPair?.to}
-                </Text>
+              <View style={styles.currencyButtonContent}>
+                <Text style={styles.currencyFlag}>{fromCurrency ? getCurrencyFlag(fromCurrency) : '🏳️'}</Text>
+                <Text style={styles.currencyCode}>{fromCurrency || 'Select'}</Text>
               </View>
-              <Ionicons name="chevron-down" size={16} color="#007AFF" />
+              <Ionicons name="chevron-down" size={16} color="#666" />
+            </TouchableOpacity>
+            
+            {/* Swap Button */}
+            <TouchableOpacity 
+              style={styles.swapButton} 
+              onPress={swapCurrencies}
+              disabled={!fromCurrency || !toCurrency}
+            >
+              <Ionicons name="swap-horizontal" size={20} color={!fromCurrency || !toCurrency ? "#ccc" : "#007AFF"} />
+            </TouchableOpacity>
+            
+            {/* To Currency */}
+            <TouchableOpacity 
+              style={[styles.currencyButton, styles.toButton]}
+              onPress={() => setShowToModal(true)}
+            >
+              <View style={styles.currencyButtonContent}>
+                <Text style={styles.currencyFlag}>{toCurrency ? getCurrencyFlag(toCurrency) : '🏳️'}</Text>
+                <Text style={styles.currencyCode}>{toCurrency || 'Select'}</Text>
+              </View>
+              <Ionicons name="chevron-down" size={16} color="#666" />
             </TouchableOpacity>
           </View>
-
           {/* Current Rate Display */}
           <View style={styles.rateCard}>
             <Text style={styles.currentRate}>{getCurrentRate()}</Text>
@@ -313,25 +302,25 @@ export default function ChartsScreen() {
         <View style={styles.infoContainer}>
           <Text style={styles.infoTitle}>About This Chart</Text>
           <Text style={styles.infoText}>
-            This chart shows the historical exchange rate between {selectedPair?.from} and {selectedPair?.to} over the selected time period. 
+            This chart shows the historical exchange rate between {fromCurrency || 'the selected base currency'} and {toCurrency || 'the target currency'} over the selected time period. 
             The data is updated regularly and shows market fluctuations.
           </Text>
         </View>
       </ScrollView>
 
-      {/* Currency Pair Selection Modal */}
+      {/* From Currency Selection Modal */}
       <Modal
-        visible={showPairModal}
+        visible={showFromModal}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setShowPairModal(false)}
+        onRequestClose={() => setShowFromModal(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowPairModal(false)}>
+            <TouchableOpacity onPress={() => setShowFromModal(false)}>
               <Text style={styles.modalCancelButton}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Select Currency Pair</Text>
+            <Text style={styles.modalTitle}>Select From Currency</Text>
             <View style={styles.modalHeaderSpacer} />
           </View>
 
@@ -353,76 +342,160 @@ export default function ChartsScreen() {
           </View>
 
           <ScrollView style={styles.modalContent}>
-            {/* Popular Pairs */}
-            {getAvailablePopularPairs().length > 0 && searchQuery === '' && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Popular Pairs</Text>
-                {getAvailablePopularPairs().map((pair, index) => (
-                  <TouchableOpacity
-                    key={`popular-${index}`}
-                    style={styles.pairOption}
-                    onPress={() => handlePairSelect(pair)}
-                  >
-                    <View style={styles.pairOptionContent}>
-                      <View style={styles.pairOptionFlags}>
-                        <Text style={styles.pairOptionFlag}>{getCurrencyFlag(pair.from)}</Text>
-                        <Text style={styles.pairOptionFlag}>{getCurrencyFlag(pair.to)}</Text>
-                      </View>
-                      <Text style={styles.pairOptionText}>{pair.from} → {pair.to}</Text>
+            {(() => {
+              const organizedCurrencies = getOrganizedCurrencies();
+              return (
+                <>
+                  {/* Selected Currencies Section */}
+                  {organizedCurrencies.selected.length > 0 && (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Your Selected Currencies</Text>
+                      {organizedCurrencies.selected.map((currency, index) => (
+                        <TouchableOpacity
+                          key={`from-selected-${currency.code}-${index}`}
+                          style={styles.currencyOption}
+                          onPress={() => handleFromCurrencySelect(currency.code)}
+                        >
+                          <View style={styles.currencyOptionContent}>
+                            <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
+                            <View style={styles.currencyOptionText}>
+                              <Text style={styles.currencyOptionCode}>{currency.code}</Text>
+                              <Text style={styles.currencyOptionName}>{currency.name}</Text>
+                            </View>
+                          </View>
+                          {fromCurrency === currency.code && (
+                            <Ionicons name="checkmark" size={20} color="#007AFF" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#ccc" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+                  )}
+                  
+                  {/* All Other Currencies Section */}
+                  {organizedCurrencies.others.length > 0 && (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>
+                        {searchQuery ? 'Other Search Results' : 'All Other Currencies'}
+                      </Text>
+                      {organizedCurrencies.others.map((currency, index) => (
+                        <TouchableOpacity
+                          key={`from-other-${currency.code}-${index}`}
+                          style={styles.currencyOption}
+                          onPress={() => handleFromCurrencySelect(currency.code)}
+                        >
+                          <View style={styles.currencyOptionContent}>
+                            <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
+                            <View style={styles.currencyOptionText}>
+                              <Text style={styles.currencyOptionCode}>{currency.code}</Text>
+                              <Text style={styles.currencyOptionName}>{currency.name}</Text>
+                            </View>
+                          </View>
+                          {fromCurrency === currency.code && (
+                            <Ionicons name="checkmark" size={20} color="#007AFF" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </>
+              );
+            })()}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
-            {/* Recent Pairs */}
-            {recentPairs.length > 0 && searchQuery === '' && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Recent</Text>
-                {recentPairs.map((pair, index) => (
-                  <TouchableOpacity
-                    key={`recent-${index}`}
-                    style={styles.pairOption}
-                    onPress={() => handlePairSelect(pair)}
-                  >
-                    <View style={styles.pairOptionContent}>
-                      <View style={styles.pairOptionFlags}>
-                        <Text style={styles.pairOptionFlag}>{getCurrencyFlag(pair.from)}</Text>
-                        <Text style={styles.pairOptionFlag}>{getCurrencyFlag(pair.to)}</Text>
-                      </View>
-                      <Text style={styles.pairOptionText}>{pair.from} → {pair.to}</Text>
-                    </View>
-                    <Ionicons name="time" size={16} color="#ccc" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+      {/* To Currency Selection Modal */}
+      <Modal
+        visible={showToModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowToModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowToModal(false)}>
+              <Text style={styles.modalCancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Select To Currency</Text>
+            <View style={styles.modalHeaderSpacer} />
+          </View>
 
-            {/* All Available Pairs */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{searchQuery ? 'Search Results' : 'All Pairs'}</Text>
-              <FlatList
-                data={getFilteredPairs()}
-                keyExtractor={(item, index) => `${item.from}-${item.to}-${index}`}
-                renderItem={({ item: pair }) => (
-                  <TouchableOpacity
-                    style={styles.pairOption}
-                    onPress={() => handlePairSelect(pair)}
-                  >
-                    <View style={styles.pairOptionContent}>
-                      <View style={styles.pairOptionFlags}>
-                        <Text style={styles.pairOptionFlag}>{getCurrencyFlag(pair.from)}</Text>
-                        <Text style={styles.pairOptionFlag}>{getCurrencyFlag(pair.to)}</Text>
-                      </View>
-                      <Text style={styles.pairOptionText}>{pair.from} → {pair.to}</Text>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search currencies..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#999"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+                <Ionicons name="close-circle" size={20} color="#666" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {(() => {
+              const organizedCurrencies = getOrganizedCurrencies();
+              return (
+                <>
+                  {/* Selected Currencies Section */}
+                  {organizedCurrencies.selected.length > 0 && (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Your Selected Currencies</Text>
+                      {organizedCurrencies.selected.map((currency, index) => (
+                        <TouchableOpacity
+                          key={`to-selected-${currency.code}-${index}`}
+                          style={styles.currencyOption}
+                          onPress={() => handleToCurrencySelect(currency.code)}
+                        >
+                          <View style={styles.currencyOptionContent}>
+                            <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
+                            <View style={styles.currencyOptionText}>
+                              <Text style={styles.currencyOptionCode}>{currency.code}</Text>
+                              <Text style={styles.currencyOptionName}>{currency.name}</Text>
+                            </View>
+                          </View>
+                          {toCurrency === currency.code && (
+                            <Ionicons name="checkmark" size={20} color="#007AFF" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#ccc" />
-                  </TouchableOpacity>
-                )}
-                scrollEnabled={false}
-              />
-            </View>
+                  )}
+                  
+                  {/* All Other Currencies Section */}
+                  {organizedCurrencies.others.length > 0 && (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>
+                        {searchQuery ? 'Other Search Results' : 'All Other Currencies'}
+                      </Text>
+                      {organizedCurrencies.others.map((currency, index) => (
+                        <TouchableOpacity
+                          key={`to-other-${currency.code}-${index}`}
+                          style={styles.currencyOption}
+                          onPress={() => handleToCurrencySelect(currency.code)}
+                        >
+                          <View style={styles.currencyOptionContent}>
+                            <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
+                            <View style={styles.currencyOptionText}>
+                              <Text style={styles.currencyOptionCode}>{currency.code}</Text>
+                              <Text style={styles.currencyOptionName}>{currency.name}</Text>
+                            </View>
+                          </View>
+                          {toCurrency === currency.code && (
+                            <Ionicons name="checkmark" size={20} color="#007AFF" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </>
+              );
+            })()}
           </ScrollView>
         </SafeAreaView>
       </Modal>
@@ -448,15 +521,19 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: theme.colors.text,
     marginBottom: 20,
   },
-  pairSelector: {
+  currencySelectorsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  pairButton: {
+  currencyButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.colors.surface,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -464,23 +541,34 @@ const createStyles = (theme: any) => StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  pairButtonContent: {
+  fromButton: {
+    marginRight: 8,
+  },
+  toButton: {
+    marginLeft: 8,
+  },
+  currencyButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
-  pairFlags: {
-    flexDirection: 'row',
-    marginRight: 12,
-  },
-  flagText: {
-    fontSize: 20,
-    marginRight: 4,
-  },
-  pairText: {
+  currencyFlag: {
     fontSize: 18,
+    marginRight: 8,
+  },
+  currencyCode: {
+    fontSize: 16,
     fontWeight: '600',
     color: theme.colors.text,
+  },
+  swapButton: {
+    backgroundColor: theme.colors.surface,
+    padding: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   modalContainer: {
     flex: 1,
@@ -549,7 +637,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  pairOption: {
+  currencyOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -563,23 +651,27 @@ const createStyles = (theme: any) => StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  pairOptionContent: {
+  currencyOptionContent: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  pairOptionFlags: {
-    flexDirection: 'row',
+  currencyOptionFlag: {
+    fontSize: 20,
     marginRight: 12,
   },
-  pairOptionFlag: {
-    fontSize: 18,
-    marginRight: 4,
+  currencyOptionText: {
+    flex: 1,
   },
-  pairOptionText: {
+  currencyOptionCode: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: theme.colors.text,
+    marginBottom: 2,
+  },
+  currencyOptionName: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
   },
   rateCard: {
     backgroundColor: theme.colors.surface,

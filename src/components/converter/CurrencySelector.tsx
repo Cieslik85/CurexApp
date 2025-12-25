@@ -14,6 +14,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Currency, addCurrency } from '@/store/slices/currencySlice';
 import { POPULAR_CURRENCIES } from '@/utils/currency';
+import { getCurrencyFlag } from '@/utils/currencyFlags';
 
 interface CurrencySelectorProps {
   visible: boolean;
@@ -80,11 +81,11 @@ export function CurrencySelector({ visible, onClose }: CurrencySelectorProps) {
       style={styles.currencyItem}
       onPress={() => handleSelectCurrency(item)}
     >
+      <Text style={styles.currencyFlag}>{getCurrencyFlag(item.code)}</Text>
       <View style={styles.currencyInfo}>
         <Text style={styles.currencyCode}>{item.code}</Text>
         <Text style={styles.currencyName}>{item.name}</Text>
       </View>
-      <Text style={styles.currencySymbol}>{item.symbol}</Text>
     </TouchableOpacity>
   );
 
@@ -193,7 +194,6 @@ const styles = StyleSheet.create({
   currencyItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: 'white',
     padding: 16,
     marginBottom: 8,
@@ -203,6 +203,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 1,
+  },
+  currencyFlag: {
+    fontSize: 20,
+    marginRight: 12,
   },
   currencyInfo: {
     flex: 1,
@@ -216,11 +220,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 2,
-  },
-  currencySymbol: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
   },
   emptyState: {
     flex: 1,
