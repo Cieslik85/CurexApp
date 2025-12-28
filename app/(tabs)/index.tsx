@@ -11,7 +11,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Image source={require('../../assets/CurexAppIconWithName.png')} style={styles.logo} />
+          <Image source={require('../../assets/logo.png')} style={styles.logo} />
           <View style={styles.textContainer}>
             <Text style={styles.title}>CurexApp</Text>
             <Text style={styles.subtitle}>Real-time Multi-Currency Exchange</Text>
@@ -29,7 +29,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    padding: 20,
+    padding: 1,
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
@@ -42,13 +42,15 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   logo: {
     width: 60,
-    height: 60,
+    height: 70,
     resizeMode: 'contain',
-    marginRight: 5,
+    marginRight: 1,
+    marginLeft: 20,
   },
   textContainer: {
     flex: 1,
     alignItems: 'center',
+    marginLeft: 1,
   },
   title: {
     fontSize: 28,

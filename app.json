@@ -17,7 +17,8 @@
       "bundleIdentifier": "com.yourcompany.curexapp"
     },
     "android": {
-      "package": "com.yourcompany.curexapp"
+      "package": "com.cieslikDev.curexapp",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro"
