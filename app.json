@@ -30,6 +30,14 @@
     "scheme": "curexapp",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "153f6967-1aa5-4aaa-a684-8e861ea1243a"
+      }
     }
   }
 }
