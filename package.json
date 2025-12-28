@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "engines": {
-    "node": "18.x"
+    "node": ">=18.0.0 <19.0.0"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "prepare": "[ \"$CI\" = \"true\" ] && echo \"Skipping husky\" || ([ -d \"node_modules/.bin\" ] && husky install || echo \"Husky not available\")"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",
