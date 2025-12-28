@@ -10,7 +10,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "prepare": "[ \"$CI\" = \"true\" ] && echo \"Skipping husky\" || ([ -d \"node_modules/.bin\" ] && husky install || echo \"Husky not available\")"
+    "prepare": "husky install || exit 0"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",
@@ -35,6 +35,8 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/react": "~18.2.45",
+    "husky": "^8.0.0",
+    "react-native-builder-bob": "^0.23.2",
     "typescript": "^5.1.3"
   },
   "private": true

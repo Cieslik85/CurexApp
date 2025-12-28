@@ -7,14 +7,23 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "node": "18.18.0"
+      "node": "18.18.0",
+      "env": {
+        "HUSKY": "0"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "node": "18.18.0"
+      "node": "18.18.0",
+      "env": {
+        "HUSKY": "0"
+      }
     },
     "production": {
-      "node": "18.18.0"
+      "node": "18.18.0",
+      "env": {
+        "HUSKY": "0"
+      }
     }
   },
   "submit": {
