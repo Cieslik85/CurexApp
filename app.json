@@ -2,7 +2,7 @@
   "expo": {
     "name": "CurexApp",
     "slug": "curexapp",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -18,14 +18,27 @@
     },
     "android": {
       "package": "com.cieslikDev.curexapp",
-      "versionCode": 1
+      "versionCode": 5,
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "buildToolsVersion": "35.0.0"
     },
     "web": {
       "bundler": "metro"
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ]
     ],
     "scheme": "curexapp",
     "experiments": {
