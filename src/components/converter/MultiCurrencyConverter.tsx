@@ -11,6 +11,10 @@ import {
   RefreshControl,
   Keyboard
 } from 'react-native';
+import DraggableFlatList, { 
+  ScaleDecorator,
+  RenderItemParams
+} from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -19,6 +23,7 @@ import {
   setLastUpdated, 
   removeCurrency,
   loadPersistedCurrencies,
+  reorderCurrencies,
   Currency 
 } from '@/store/slices/currencySlice';
 import { useGetSpecificRatesQuery } from '@/store/services/exchangeRateApi';
@@ -117,6 +122,8 @@ interface CurrencyItemProps {
   currentValue?: string;
   theme: any;
   styles: any;
+  drag?: () => void;
+  isBeingDragged?: boolean;
 }
 
 const CurrencyItem: React.FC<CurrencyItemProps> = ({ 
@@ -128,7 +135,9 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
   isActive,
   currentValue,
   theme,
-  styles
+  styles,
+  drag,
+  isBeingDragged
 }) => {
   const [localValue, setLocalValue] = useState(currency.value);
 
@@ -197,8 +206,18 @@ const CurrencyItem: React.FC<CurrencyItemProps> = ({
   };
 
   return (
-    <View style={styles.currencyItem}>
+    <View style={[
+      styles.currencyItem,
+      isBeingDragged && { opacity: 0.8, elevation: 8, shadowOpacity: 0.3 }
+    ]}>
       <View style={styles.inputContainer}>
+        <TouchableOpacity 
+          onPressIn={drag}
+          style={styles.dragHandle}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="menu" size={18} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
         <Text style={styles.currencyFlag}>{getCurrencyFlag(currency.code)}</Text>
         <Text style={styles.currencyCode}>{currency.code}</Text>
         <Text style={styles.currencySymbol}>{currency.symbol}</Text>
@@ -459,18 +478,22 @@ export function MultiCurrencyConverter() {
     setRefreshing(false);
   }, [refetch]);
 
-  const renderCurrencyItem = ({ item }: { item: Currency }) => (
-    <CurrencyItem 
-      currency={item}
-      onValueChange={handleValueChange}
-      onRemove={handleRemoveCurrency}
-      onFocus={handleFieldFocus}
-      isCalculating={isLoading}
-      isActive={activeField === item.code}
-      currentValue={fieldValues[item.code]}
-      theme={theme}
-      styles={styles}
-    />
+  const renderCurrencyItem = ({ item, drag, isActive: isDragging }: RenderItemParams<Currency>) => (
+    <ScaleDecorator>
+      <CurrencyItem 
+        currency={item}
+        onValueChange={handleValueChange}
+        onRemove={handleRemoveCurrency}
+        onFocus={handleFieldFocus}
+        isCalculating={isLoading}
+        isActive={activeField === item.code}
+        currentValue={fieldValues[item.code]}
+        theme={theme}
+        styles={styles}
+        drag={drag}
+        isBeingDragged={isDragging}
+      />
+    </ScaleDecorator>
   );
 
   const getLastUpdatedText = () => {
@@ -487,6 +510,10 @@ export function MultiCurrencyConverter() {
     return `Updated ${hours}h ago`;
   };
   
+  const handleDragEnd = ({ data }: { data: Currency[] }) => {
+    dispatch(reorderCurrencies(data));
+  };
+  
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -498,33 +525,38 @@ export function MultiCurrencyConverter() {
         </View>
       </View>
 
-      <FlatList
-        data={selectedCurrencies}
-        renderItem={renderCurrencyItem}
-        keyExtractor={(item) => item.code}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.colors.primary}
-          />
-        }
-        contentContainerStyle={styles.listContent}
-      />
+      <View style={styles.contentContainer}>
+        <DraggableFlatList
+          data={selectedCurrencies}
+          renderItem={renderCurrencyItem}
+          keyExtractor={(item) => item.code}
+          onDragEnd={handleDragEnd}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.colors.primary}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+        />
+      </View>
 
-      <TouchableOpacity 
-        style={styles.addButton}
-        onPress={() => setShowCurrencySelector(true)}
-      >
-        <Ionicons name="add-circle" size={24} color={theme.colors.primary} />
-        <Text style={styles.addButtonText}>Add Currency</Text>
-      </TouchableOpacity>
+      <View style={styles.bottomSection}>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => setShowCurrencySelector(true)}
+        >
+          <Ionicons name="add-circle" size={24} color={theme.colors.primary} />
+          <Text style={styles.addButtonText}>Add Currency</Text>
+        </TouchableOpacity>
 
-      <PermanentKeyboard 
-        onKeyPress={handleKeyboardInput}
-        theme={theme}
-      />
+        <PermanentKeyboard 
+          onKeyPress={handleKeyboardInput}
+          theme={theme}
+        />
+      </View>
 
       <CurrencySelector
         visible={showCurrencySelector}
@@ -538,6 +570,12 @@ const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
     padding: 1,
+    backgroundColor: theme.colors.background,
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  bottomSection: {
     backgroundColor: theme.colors.background,
   },
   header: {
@@ -575,6 +613,11 @@ const createStyles = (theme: any) => StyleSheet.create({
   currencyFlag: {
     fontSize: 18,
     marginRight: 6,
+  },
+  dragHandle: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 4,
   },
   currencyCode: {
     fontSize: 14,

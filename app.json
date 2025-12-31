@@ -19,11 +19,7 @@
     },
     "android": {
       "package": "com.cieslikDev.curexapp",
-      "versionCode": 9,
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+      "versionCode": 9
     },
     "web": {
       "bundler": "metro"
