@@ -2,8 +2,9 @@
   "expo": {
     "name": "CurexApp",
     "slug": "curexapp",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "resizeMode": "contain",
@@ -18,7 +19,11 @@
     },
     "android": {
       "package": "com.cieslikDev.curexapp",
-      "versionCode": 8
+      "versionCode": 9,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "web": {
       "bundler": "metro"
