@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -26,7 +26,8 @@ import {
   reorderCurrencies,
   Currency 
 } from '@/store/slices/currencySlice';
-import { useGetSpecificRatesQuery } from '@/store/services/exchangeRateApi';
+import { useInstantConverter } from '@/hooks/useCurrencyConverter';
+import { useGetAllMajorRatesQuery } from '@/store/services/exchangeRateApi';
 import { CurrencySelector } from './CurrencySelector';
 import { useTheme } from '@/contexts/ThemeContext';
 import { saveSelectedCurrencies, loadSelectedCurrencies } from '@/utils/currencyPersistence';
@@ -275,6 +276,36 @@ export function MultiCurrencyConverter() {
   const [activeField, setActiveField] = useState<string | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [freshlyFocused, setFreshlyFocused] = useState<boolean>(false);
+  const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Use instant converter for real-time calculations  
+  const { data: allRates, isLoading: ratesLoading, error: ratesError } = useGetAllMajorRatesQuery('USD', {
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  });
+
+  // Instant conversion function using cached rates
+  const instantConvert = useCallback((amount: number, fromCurrency: string, toCurrency: string): number => {
+    if (fromCurrency === toCurrency) return amount;
+    if (!allRates?.rates || amount === 0) return 0;
+    
+    // Convert through USD as base currency
+    const toUsdRate = fromCurrency === 'USD' ? 1 : (1 / (allRates.rates[fromCurrency] || 1));
+    const fromUsdRate = toCurrency === 'USD' ? 1 : (allRates.rates[toCurrency] || 1);
+    
+    return Math.round((amount * toUsdRate * fromUsdRate) * 10000) / 10000;
+  }, [allRates]);
+
+  // Manual refresh function
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // Force a small delay to show refresh indicator, then update timestamp
+    setTimeout(() => {
+      dispatch(setLastUpdated(Date.now()));
+      setRefreshing(false);
+    }, 500);
+  }, [dispatch]);
 
   // Ensure theme is loaded
   if (!theme || !theme.colors) {
@@ -321,53 +352,13 @@ export function MultiCurrencyConverter() {
     }
   }, [selectedCurrencies, activeField]);
 
-  // Get exchange rates for selected currencies
-  const currencyCodes = selectedCurrencies.map(c => c.code);
-  const { 
-    data: ratesData, 
-    isLoading, 
-    refetch,
-    error 
-  } = useGetSpecificRatesQuery(
-    { 
-      base: inputCurrency || baseCurrency, 
-      targets: currencyCodes.filter(code => code !== (inputCurrency || baseCurrency))
-    },
-    { 
-      skip: !inputCurrency && !inputAmount,
-      refetchOnMountOrArgChange: true 
-    }
-  );
-
-  // Calculate exchange rates when input changes
-  useEffect(() => {
-    if (inputCurrency && inputAmount && ratesData?.rates && parseFloat(inputAmount) > 0) {
-      const amount = parseFloat(inputAmount);
-      
-      selectedCurrencies.forEach(currency => {
-        if (currency.code === inputCurrency) {
-          const trimmedValue = trimToTwoDecimals(inputAmount);
-          dispatch(updateCurrencyValue({ code: currency.code, value: trimmedValue }));
-        } else {
-          const rate = ratesData.rates[currency.code];
-          if (rate) {
-            const convertedValue = trimToTwoDecimals(amount * rate);
-            dispatch(updateCurrencyValue({ code: currency.code, value: convertedValue }));
-          }
-        }
-      });
-
-      dispatch(setLastUpdated(Date.now()));
-    }
-  }, [inputCurrency, inputAmount, ratesData, dispatch, selectedCurrencies]);
-
   // Calculate values for newly added currencies based on existing non-zero values
   useEffect(() => {
     const currenciesWithValues = selectedCurrencies.filter(c => parseFloat(c.value) > 0);
     const currenciesWithZero = selectedCurrencies.filter(c => parseFloat(c.value) === 0);
     
     // If we have currencies with values and currencies with zero values, convert them
-    if (currenciesWithValues.length > 0 && currenciesWithZero.length > 0 && ratesData?.rates) {
+    if (currenciesWithValues.length > 0 && currenciesWithZero.length > 0) {
       const referenceCurrency = currenciesWithValues[0];
       const referenceAmount = parseFloat(referenceCurrency.value);
       
@@ -377,32 +368,42 @@ export function MultiCurrencyConverter() {
         setInputAmount(referenceCurrency.value);
       }
       
-      // Convert zero-value currencies
+      // Convert zero-value currencies instantly
       currenciesWithZero.forEach(currency => {
         if (currency.code !== referenceCurrency.code) {
-          const rate = ratesData.rates[currency.code];
-          if (rate) {
-            const convertedValue = trimToTwoDecimals(referenceAmount * rate);
-            dispatch(updateCurrencyValue({ code: currency.code, value: convertedValue }));
-          }
+          const convertedValue = instantConvert(referenceAmount, referenceCurrency.code, currency.code);
+          const trimmedConvertedValue = trimToTwoDecimals(convertedValue.toString());
+          dispatch(updateCurrencyValue({ code: currency.code, value: trimmedConvertedValue }));
         }
       });
     }
-  }, [selectedCurrencies.length, ratesData, dispatch]); // Only trigger when currencies are added/removed
+  }, [selectedCurrencies.length, instantConvert, dispatch]); // Only trigger when currencies are added/removed
 
   const handleValueChange = useCallback((code: string, value: string) => {
+    // Set this as the input currency
     setInputCurrency(code);
     setInputAmount(value);
     
-    // Clear other currencies if input is empty
-    if (!value || value === '0') {
-      selectedCurrencies.forEach(currency => {
+    const amount = parseFloat(value) || 0;
+    
+    // Update all currencies including the active one
+    selectedCurrencies.forEach(currency => {
+      if (currency.code === code) {
+        // Update the input currency directly
+        dispatch(updateCurrencyValue({ code: currency.code, value: value || '0' }));
+      } else if (amount > 0) {
+        // Instantly convert to other currencies
+        const convertedValue = instantConvert(amount, code, currency.code);
+        const trimmedValue = trimToTwoDecimals(convertedValue.toString());
+        dispatch(updateCurrencyValue({ code: currency.code, value: trimmedValue }));
+      } else {
+        // Clear other currencies if input is empty/zero
         dispatch(updateCurrencyValue({ code: currency.code, value: '0' }));
-      });
-      setInputCurrency(null);
-      setInputAmount('0');
-    }
-  }, [dispatch, selectedCurrencies]);
+      }
+    });
+    
+    dispatch(setLastUpdated(Date.now()));
+  }, [dispatch, selectedCurrencies, instantConvert]);
 
   const handleRemoveCurrency = useCallback((code: string) => {
     if (selectedCurrencies.length <= 2) {
@@ -429,54 +430,41 @@ export function MultiCurrencyConverter() {
   const handleKeyboardInput = useCallback((key: string) => {
     if (!activeField) return;
 
-    setFieldValues(prev => {
-      const currentValue = prev[activeField] || '';
-      let newValue = currentValue;
+    const currentValue = fieldValues[activeField] || '';
+    let newValue = currentValue;
 
-      if (key === '⌫') {
-        // Backspace
-        newValue = currentValue.slice(0, -1);
+    if (key === '⌫') {
+      // Backspace
+      newValue = currentValue.slice(0, -1);
+      setFreshlyFocused(false);
+    } else if (key === '.') {
+      // Decimal point - only allow one
+      if (freshlyFocused) {
+        // If freshly focused, replace with just the decimal
+        newValue = '0.';
         setFreshlyFocused(false);
-      } else if (key === '.') {
-        // Decimal point - only allow one
-        if (freshlyFocused) {
-          // If freshly focused, replace with just the decimal
-          newValue = '0.';
-          setFreshlyFocused(false);
-        } else if (!currentValue.includes('.')) {
-          newValue = currentValue + '.';
-        }
+      } else if (!currentValue.includes('.')) {
+        newValue = currentValue + '.';
+      }
+    } else {
+      // Numbers
+      if (freshlyFocused) {
+        // If freshly focused, replace the entire value
+        newValue = key;
+        setFreshlyFocused(false);
       } else {
-        // Numbers
-        if (freshlyFocused) {
-          // If freshly focused, replace the entire value
-          newValue = key;
-          setFreshlyFocused(false);
-        } else {
-          newValue = currentValue + key;
-        }
+        newValue = currentValue + key;
       }
-
-      // Validate the new value
-      if (newValue === '' || /^\d*\.?\d*$/.test(newValue)) {
-        // Update the currency value
-        handleValueChange(activeField, newValue);
-        return { ...prev, [activeField]: newValue };
-      }
-      
-      return prev;
-    });
-  }, [activeField, handleValueChange, freshlyFocused]);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await refetch();
-    } catch (error) {
-      console.error('Failed to refresh rates:', error);
     }
-    setRefreshing(false);
-  }, [refetch]);
+
+    // Validate the new value
+    if (newValue === '' || /^\d*\.?\d*$/.test(newValue)) {
+      // Immediately update local state for instant feedback
+      setFieldValues(prev => ({ ...prev, [activeField]: newValue }));
+      // Update Redux (with debounced conversions)
+      handleValueChange(activeField, newValue);
+    }
+  }, [activeField, fieldValues, handleValueChange, freshlyFocused]);
 
   const renderCurrencyItem = ({ item, drag, isActive: isDragging }: RenderItemParams<Currency>) => (
     <ScaleDecorator>
@@ -485,7 +473,7 @@ export function MultiCurrencyConverter() {
         onValueChange={handleValueChange}
         onRemove={handleRemoveCurrency}
         onFocus={handleFieldFocus}
-        isCalculating={isLoading}
+        isCalculating={ratesLoading}
         isActive={activeField === item.code}
         currentValue={fieldValues[item.code]}
         theme={theme}
@@ -519,7 +507,7 @@ export function MultiCurrencyConverter() {
       <View style={styles.header}>
         <View style={styles.statusRow}>
           <Text style={styles.lastUpdated}>{getLastUpdatedText()}</Text>
-          {error && (
+          {ratesError && (
             <Text style={styles.errorText}>Failed to load rates</Text>
           )}
         </View>

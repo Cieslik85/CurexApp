@@ -225,7 +225,25 @@ export const validateCurrencyCode = (code: string): boolean => {
 };
 
 export const calculateConversion = (amount: number, rate: number): number => {
+  if (amount === 0 || rate === 0) return 0;
   return Math.round((amount * rate) * 10000) / 10000; // Round to 4 decimal places
+};
+
+// Optimized batch conversion for multiple currencies
+export const batchCalculateConversions = (
+  amount: number,
+  rates: Record<string, number>,
+  targetCurrencies: string[]
+): Record<string, number> => {
+  if (amount === 0) {
+    return targetCurrencies.reduce((acc, currency) => ({ ...acc, [currency]: 0 }), {});
+  }
+  
+  return targetCurrencies.reduce((acc, currency) => {
+    const rate = rates[currency];
+    acc[currency] = rate ? Math.round((amount * rate) * 10000) / 10000 : 0;
+    return acc;
+  }, {} as Record<string, number>);
 };
 
 export const getCurrencyInfo = (code: string): CurrencyInfo | undefined => {
