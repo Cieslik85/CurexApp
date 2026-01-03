@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator, Modal, TextInput, FlatList } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator, Modal, TextInput, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { useSelector } from 'react-redux';
@@ -22,6 +22,7 @@ export default function ChartsScreen() {
   const [fromCurrency, setFromCurrency] = useState<string>('');
   const [toCurrency, setToCurrency] = useState<string>('');
   const [historicalData, setHistoricalData] = useState<HistoricalRate[]>([]);
+  const [currentRate, setCurrentRate] = useState<number>(0);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [loading, setLoading] = useState(false);
   const [showFromModal, setShowFromModal] = useState(false);
@@ -83,42 +84,61 @@ export default function ChartsScreen() {
     setToCurrency(temp);
   };
 
-  // Generate mock historical data for demonstration
-  const generateMockData = (days: number): HistoricalRate[] => {
-    const data: HistoricalRate[] = [];
-    const baseRate = 1 + Math.random() * 2; // Random base rate between 1-3
-    
-    for (let i = days; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      
-      // Generate realistic fluctuation around base rate
-      const fluctuation = (Math.random() - 0.5) * 0.1 * baseRate; // ±10% fluctuation
-      const rate = Math.max(0.01, baseRate + fluctuation + (Math.sin(i / 10) * 0.05 * baseRate));
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        rate: parseFloat(rate.toFixed(4))
-      });
-    }
-    return data;
-  };
-
-  // Fetch historical data (mock implementation)
+  // Fetch real historical data from Frankfurter API
   useEffect(() => {
     if (!fromCurrency || !toCurrency || fromCurrency === toCurrency) return;
 
-    setLoading(true);
-    
-    // Simulate API call delay
-    const timeout = setTimeout(() => {
-      const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
-      const mockData = generateMockData(days);
-      setHistoricalData(mockData);
-      setLoading(false);
-    }, 1000);
+    const fetchHistoricalData = async () => {
+      setLoading(true);
+      
+      try {
+        // Calculate date range
+        const endDate = new Date();
+        const startDate = new Date();
+        const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
+        startDate.setDate(startDate.getDate() - days);
 
-    return () => clearTimeout(timeout);
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+
+        // Fetch historical data from Frankfurter API
+        const response = await fetch(
+          `https://api.frankfurter.app/${startDateStr}..${endDateStr}?from=${fromCurrency}&to=${toCurrency}`
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch historical data');
+        }
+
+        const data = await response.json();
+        
+        // Transform API response to our format
+        const historicalRates: HistoricalRate[] = Object.entries(data.rates).map(([date, rates]: [string, any]) => ({
+          date,
+          rate: rates[toCurrency]
+        }));
+
+        // Sort by date
+        historicalRates.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        setHistoricalData(historicalRates);
+        
+        // Set current rate from the latest data point
+        if (historicalRates.length > 0) {
+          setCurrentRate(historicalRates[historicalRates.length - 1].rate);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching historical data:', error);
+        Alert.alert('Error', 'Failed to load historical exchange rates. Please try again.');
+        setHistoricalData([]);
+        setCurrentRate(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistoricalData();
   }, [fromCurrency, toCurrency, timeRange]);
 
   const getChartData = () => {
@@ -167,17 +187,17 @@ export default function ChartsScreen() {
   };
 
   const getCurrentRate = (): string => {
-    if (historicalData.length === 0) return '0.0000';
-    return historicalData[historicalData.length - 1].rate.toFixed(4);
+    if (currentRate === 0) return '0.0000';
+    return currentRate.toFixed(4);
   };
 
   const getRateChange = (): { change: string; percentage: string; isPositive: boolean } => {
     if (historicalData.length < 2) return { change: '0.0000', percentage: '0.00', isPositive: true };
     
     const latest = historicalData[historicalData.length - 1].rate;
-    const previous = historicalData[historicalData.length - 2].rate;
-    const change = latest - previous;
-    const percentage = ((change / previous) * 100);
+    const first = historicalData[0].rate;
+    const change = latest - first;
+    const percentage = ((change / first) * 100);
     
     return {
       change: change.toFixed(4),
