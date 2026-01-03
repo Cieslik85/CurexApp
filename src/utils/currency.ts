@@ -27,7 +27,6 @@ export const ALL_CURRENCIES: CurrencyInfo[] = [
   { code: 'BOB', name: 'Bolivian Boliviano', symbol: '$b' },
   { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
   { code: 'BSD', name: 'Bahamian Dollar', symbol: '$' },
-  { code: 'BTC', name: 'Bitcoin', symbol: '₿' },
   { code: 'BTN', name: 'Bhutanese Ngultrum', symbol: 'Nu.' },
   { code: 'BWP', name: 'Botswanan Pula', symbol: 'P' },
   { code: 'BYN', name: 'Belarusian Ruble', symbol: 'Br' },
