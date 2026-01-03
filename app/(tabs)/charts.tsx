@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Text, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator, Modal, TextInput, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
@@ -10,6 +10,13 @@ import { ALL_CURRENCIES } from '@/utils/currency';
 import { getCurrencyFlag } from '@/utils/currencyFlags';
 
 const { width: screenWidth } = Dimensions.get('window');
+
+// Currencies supported by Frankfurter API
+const FRANKFURTER_SUPPORTED_CURRENCIES = [
+  'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR', 'GBP',
+  'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR',
+  'NOK', 'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'
+];
 
 interface HistoricalRate {
   date: string;
@@ -37,32 +44,21 @@ export default function ChartsScreen() {
     }
   }, [selectedCurrencies, fromCurrency, toCurrency]);
 
-  // Get organized currencies for selection (selected ones first, then all others)
-  const getOrganizedCurrencies = () => {
-    const selectedCodes = selectedCurrencies.map(c => c.code);
-    
-    // Filter all currencies based on search query
-    const filteredAll = ALL_CURRENCIES.filter(currency => {
-      if (!searchQuery) return true;
-      return currency.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             currency.name.toLowerCase().includes(searchQuery.toLowerCase());
-    });
-    
-    // Split into selected and other currencies
-    const selectedFiltered = filteredAll.filter(currency => 
-      selectedCodes.includes(currency.code)
+  // Memoized filtered currencies for selection (only Frankfurter supported currencies)
+  const filteredCurrencies = useMemo(() => {
+    // Filter to only show currencies supported by Frankfurter API
+    const supportedCurrencies = ALL_CURRENCIES.filter(currency => 
+      FRANKFURTER_SUPPORTED_CURRENCIES.includes(currency.code)
     );
     
-    const otherFiltered = filteredAll.filter(currency => 
-      !selectedCodes.includes(currency.code)
-    );
+    if (!searchQuery.trim()) return supportedCurrencies;
     
-    return {
-      selected: selectedFiltered,
-      others: otherFiltered,
-      all: [...selectedFiltered, ...otherFiltered]
-    };
-  };
+    const query = searchQuery.toLowerCase();
+    return supportedCurrencies.filter(currency => 
+      currency.code.toLowerCase().includes(query) ||
+      currency.name.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
 
   // Handle currency selection
   const handleFromCurrencySelect = (currencyCode: string) => {
@@ -128,9 +124,14 @@ export default function ChartsScreen() {
           setCurrentRate(historicalRates[historicalRates.length - 1].rate);
         }
         
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching historical data:', error);
-        Alert.alert('Error', 'Failed to load historical exchange rates. Please try again.');
+        
+        Alert.alert(
+          'Error Loading Data', 
+          `Unable to load historical data for ${fromCurrency}/${toCurrency}. This currency pair may not be supported.`
+        );
+        
         setHistoricalData([]);
         setCurrentRate(0);
       } finally {
@@ -361,66 +362,32 @@ export default function ChartsScreen() {
             )}
           </View>
 
-          <ScrollView style={styles.modalContent}>
-            {(() => {
-              const organizedCurrencies = getOrganizedCurrencies();
-              return (
-                <>
-                  {/* Selected Currencies Section */}
-                  {organizedCurrencies.selected.length > 0 && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Your Selected Currencies</Text>
-                      {organizedCurrencies.selected.map((currency, index) => (
-                        <TouchableOpacity
-                          key={`from-selected-${currency.code}-${index}`}
-                          style={styles.currencyOption}
-                          onPress={() => handleFromCurrencySelect(currency.code)}
-                        >
-                          <View style={styles.currencyOptionContent}>
-                            <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
-                            <View style={styles.currencyOptionText}>
-                              <Text style={styles.currencyOptionCode}>{currency.code}</Text>
-                              <Text style={styles.currencyOptionName}>{currency.name}</Text>
-                            </View>
-                          </View>
-                          {fromCurrency === currency.code && (
-                            <Ionicons name="checkmark" size={20} color="#007AFF" />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                  
-                  {/* All Other Currencies Section */}
-                  {organizedCurrencies.others.length > 0 && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>
-                        {searchQuery ? 'Other Search Results' : 'All Other Currencies'}
-                      </Text>
-                      {organizedCurrencies.others.map((currency, index) => (
-                        <TouchableOpacity
-                          key={`from-other-${currency.code}-${index}`}
-                          style={styles.currencyOption}
-                          onPress={() => handleFromCurrencySelect(currency.code)}
-                        >
-                          <View style={styles.currencyOptionContent}>
-                            <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
-                            <View style={styles.currencyOptionText}>
-                              <Text style={styles.currencyOptionCode}>{currency.code}</Text>
-                              <Text style={styles.currencyOptionName}>{currency.name}</Text>
-                            </View>
-                          </View>
-                          {fromCurrency === currency.code && (
-                            <Ionicons name="checkmark" size={20} color="#007AFF" />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </>
-              );
-            })()}
-          </ScrollView>
+          <FlatList
+            data={filteredCurrencies}
+            keyExtractor={(item) => `from-${item.code}`}
+            renderItem={({ item: currency }) => (
+              <TouchableOpacity
+                style={styles.currencyOption}
+                onPress={() => handleFromCurrencySelect(currency.code)}
+              >
+                <View style={styles.currencyOptionContent}>
+                  <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
+                  <View style={styles.currencyOptionText}>
+                    <Text style={styles.currencyOptionCode}>{currency.code}</Text>
+                    <Text style={styles.currencyOptionName}>{currency.name}</Text>
+                  </View>
+                </View>
+                {fromCurrency === currency.code && (
+                  <Ionicons name="checkmark" size={20} color="#007AFF" />
+                )}
+              </TouchableOpacity>
+            )}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+            showsVerticalScrollIndicator={false}
+            initialNumToRender={20}
+            maxToRenderPerBatch={20}
+            windowSize={10}
+          />
         </SafeAreaView>
       </Modal>
 
@@ -457,66 +424,32 @@ export default function ChartsScreen() {
             )}
           </View>
 
-          <ScrollView style={styles.modalContent}>
-            {(() => {
-              const organizedCurrencies = getOrganizedCurrencies();
-              return (
-                <>
-                  {/* Selected Currencies Section */}
-                  {organizedCurrencies.selected.length > 0 && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Your Selected Currencies</Text>
-                      {organizedCurrencies.selected.map((currency, index) => (
-                        <TouchableOpacity
-                          key={`to-selected-${currency.code}-${index}`}
-                          style={styles.currencyOption}
-                          onPress={() => handleToCurrencySelect(currency.code)}
-                        >
-                          <View style={styles.currencyOptionContent}>
-                            <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
-                            <View style={styles.currencyOptionText}>
-                              <Text style={styles.currencyOptionCode}>{currency.code}</Text>
-                              <Text style={styles.currencyOptionName}>{currency.name}</Text>
-                            </View>
-                          </View>
-                          {toCurrency === currency.code && (
-                            <Ionicons name="checkmark" size={20} color="#007AFF" />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                  
-                  {/* All Other Currencies Section */}
-                  {organizedCurrencies.others.length > 0 && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>
-                        {searchQuery ? 'Other Search Results' : 'All Other Currencies'}
-                      </Text>
-                      {organizedCurrencies.others.map((currency, index) => (
-                        <TouchableOpacity
-                          key={`to-other-${currency.code}-${index}`}
-                          style={styles.currencyOption}
-                          onPress={() => handleToCurrencySelect(currency.code)}
-                        >
-                          <View style={styles.currencyOptionContent}>
-                            <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
-                            <View style={styles.currencyOptionText}>
-                              <Text style={styles.currencyOptionCode}>{currency.code}</Text>
-                              <Text style={styles.currencyOptionName}>{currency.name}</Text>
-                            </View>
-                          </View>
-                          {toCurrency === currency.code && (
-                            <Ionicons name="checkmark" size={20} color="#007AFF" />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </>
-              );
-            })()}
-          </ScrollView>
+          <FlatList
+            data={filteredCurrencies}
+            keyExtractor={(item) => `to-${item.code}`}
+            renderItem={({ item: currency }) => (
+              <TouchableOpacity
+                style={styles.currencyOption}
+                onPress={() => handleToCurrencySelect(currency.code)}
+              >
+                <View style={styles.currencyOptionContent}>
+                  <Text style={styles.currencyOptionFlag}>{getCurrencyFlag(currency.code)}</Text>
+                  <View style={styles.currencyOptionText}>
+                    <Text style={styles.currencyOptionCode}>{currency.code}</Text>
+                    <Text style={styles.currencyOptionName}>{currency.name}</Text>
+                  </View>
+                </View>
+                {toCurrency === currency.code && (
+                  <Ionicons name="checkmark" size={20} color="#007AFF" />
+                )}
+              </TouchableOpacity>
+            )}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+            showsVerticalScrollIndicator={false}
+            initialNumToRender={20}
+            maxToRenderPerBatch={20}
+            windowSize={10}
+          />
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
